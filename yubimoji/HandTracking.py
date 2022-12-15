@@ -42,10 +42,10 @@ def draw_point_history(image, point_history):
 
 
 # CSVファイルに座標履歴を保存する関数
-def logging_csv(finger_num, gesture_id, csv_path, width, height, point_history_list_x, point_history_list_y):
+def logging_csv(finger_num, gesture_id, csv_path, point_history_list_x, point_history_list_y):
     with open(csv_path, 'a', newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([gesture_id, width, height, finger_num, *point_history_list_x, *point_history_list_y])
+        writer.writerow([gesture_id, finger_num, *point_history_list_x, *point_history_list_y])
 
     #with open('./point_history2.csv', 'a', newline="") as f:
         #writer = csv.writer(f)
@@ -126,7 +126,7 @@ while video_capture.isOpened():
                        point_history_list_y = list(point_history_y)
 
 
-                       logging_csv(i, args.gesture_id, csv_path, frame_width, frame_height,
+                       logging_csv(i, args.gesture_id, csv_path,
                                    point_history_list_x, point_history_list_y)
 
                        point_history_num[i] = 0

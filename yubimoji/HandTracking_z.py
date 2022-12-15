@@ -12,6 +12,8 @@ import mediapipe as mp
 parser = argparse.ArgumentParser()
 parser.add_argument("--gesture_id", type=int, default=0)
 parser.add_argument("--time", type=int, default=5)
+parser.add_argument("--number", type=int, default=1)
+
 args = parser.parse_args()
 
 
@@ -44,10 +46,10 @@ def draw_point_history(image, point_history):
 
 
 # CSVファイルに座標履歴を保存する関数
-def logging_csv(finger_num, gesture_id, csv_path, width, height, point_history_list_x, point_history_list_y, point_history_list_z):
+def logging_csv(finger_num, gesture_id, number, csv_path, point_history_list_x, point_history_list_y, point_history_list_z):
     with open(csv_path, 'a', newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([gesture_id, width, height, finger_num, *point_history_list_x, *point_history_list_y, point_history_list_z])
+        writer.writerow([gesture_id, number, finger_num, *point_history_list_x, *point_history_list_y, point_history_list_z])
     return
 
 
@@ -121,7 +123,7 @@ while video_capture.isOpened():
                        point_history_list_x = list(point_history_x)
                        point_history_list_y = list(point_history_y)
                        point_history_list_z = list(point_history_z)
-                       logging_csv(i, args.gesture_id, csv_path, frame_width, frame_height,
+                       logging_csv(i, args.gesture_id, args.number, csv_path,
                                    point_history_list_x, point_history_list_y, point_history_list_z)
                        point_history_num[i] = 0
 
