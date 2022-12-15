@@ -110,6 +110,7 @@ while video_capture.isOpened():
                        point_history_list = list(itertools.chain.from_iterable(point_history))
                        logging_csv(i, args.gesture_id, csv_path, frame_width, frame_height,
                                    point_history_list)
+                       point_history_num[i] = 0
 
     # ディスプレイ表示
     frame = draw_point_history(frame, point_history)
