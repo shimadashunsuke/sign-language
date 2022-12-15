@@ -18,16 +18,19 @@ args = parser.parse_args()
 
 # ランドマークの画像上の位置を算出する関数
 def calc_landmark_list(image, landmarks):
-    landmark_point = []
+    landmark_point =[]
+    landmark_point_x = []
+    landmark_point_y = []
     image_width, image_height = image.shape[1], image.shape[0]
 
     for _, landmark in enumerate(landmarks.landmark):
         landmark_x = min(int(landmark.x * image_width), image_width - 1)
         landmark_y = min(int(landmark.y * image_height), image_height - 1)
         landmark_point.append([landmark_x, landmark_y])
+        landmark_point_x.append(landmark_x)
+        landmark_point_y.append(landmark_y)
 
-    return landmark_point
-
+    return landmark_point, landmark_point_x, landmark_point_y
 
 # 座標履歴を描画する関数
 def draw_point_history(image, point_history):
@@ -39,10 +42,15 @@ def draw_point_history(image, point_history):
 
 
 # CSVファイルに座標履歴を保存する関数
-def logging_csv(finger_num, gesture_id, csv_path, width, height, point_history_list):
+def logging_csv(finger_num, gesture_id, csv_path, width, height, point_history_list_x, point_history_list_y):
     with open(csv_path, 'a', newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([gesture_id, width, height, finger_num, *point_history_list])
+        writer.writerow([gesture_id, width, height, finger_num, *point_history_list_x, *point_history_list_y])
+
+    #with open('./point_history2.csv', 'a', newline="") as f:
+        #writer = csv.writer(f)
+        #writer.writerow([gesture_id, width, height, finger_num, *point_history_list])
+
     return
 
 
@@ -68,6 +76,9 @@ hands = mp_hands.Hands(
 # 人差指の指先の座標履歴を保持するための変数
 history_length = 16
 point_history = deque(maxlen=history_length)
+point_history_x = deque(maxlen=history_length)
+point_history_y = deque(maxlen=history_length)
+
 point_history_num = [0]*21
 
 # CSVファイル保存先
@@ -99,17 +110,25 @@ while video_capture.isOpened():
                                       mp_hands.HAND_CONNECTIONS)
 
             # ランドマーク座標の計算
-            landmark_list = calc_landmark_list(rgb_image, hand_landmarks)
+            landmark_list, landmark_list_x, landmark_list_y = calc_landmark_list(rgb_image, hand_landmarks)
+
             # 人差指の指先座標を履歴に追加
             for i in range(21):
-                point_history.append(landmark_list[i])
+                point_history_x.append(landmark_list_x[i])
+                point_history_y.append(landmark_list_y[i])
+                #point_history.append(landmark_list[i])
                 point_history_num[i] = point_history_num[i] + 1
 
                 for i in range(21):
                     if point_history_num[i] == history_length:
-                       point_history_list = list(itertools.chain.from_iterable(point_history))
+                       #point_history_list = list(itertools.chain.from_iterable(point_history))
+                       point_history_list_x = list(point_history_x)
+                       point_history_list_y = list(point_history_y)
+
+
                        logging_csv(i, args.gesture_id, csv_path, frame_width, frame_height,
-                                   point_history_list)
+                                   point_history_list_x, point_history_list_y)
+
                        point_history_num[i] = 0
 
     # ディスプレイ表示
