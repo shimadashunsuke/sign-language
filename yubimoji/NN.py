@@ -104,5 +104,3 @@ print(np.argmax(np.squeeze(tflite_results)))
 interpreter.set_tensor(input_details[0]['index'], np.array([X_dataset[0]]))
 interpreter.invoke()
 tflite_results = interpreter.get_tensor(output_details[0]['index'])
-
-
