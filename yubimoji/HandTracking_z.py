@@ -49,7 +49,7 @@ def draw_point_history(image, point_history):
 def logging_csv(finger_num, gesture_id, number, csv_path, point_history_list_x, point_history_list_y, point_history_list_z):
     with open(csv_path, 'a', newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([gesture_id, number, finger_num, *point_history_list_x, *point_history_list_y, point_history_list_z])
+        writer.writerow([gesture_id, number, finger_num, *point_history_list_x, *point_history_list_y, *point_history_list_z])
     return
 
 
