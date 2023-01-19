@@ -35,7 +35,12 @@ for i in range(2, 35, 16):
 for i in range(2, 35, 16):
     v_x2 = np.append(v_x2, df_12_0.iat[0, i])
 
+for i in range(2, 35, 16):
+    v_x2 = np.append(v_x2, df_16_0.iat[0, i])
+
+for i in range(2, 35, 16):
+    v_x2 = np.append(v_x2, df_20_0.iat[0, i])
+
 v = []
 v.append(v_x1)
 v.append(v_x2)
-print(v)
