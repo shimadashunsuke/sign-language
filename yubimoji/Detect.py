@@ -31,10 +31,10 @@ def calc_landmark_list(image, landmarks):
 
     return landmark_point_x, landmark_point_y, landmark_point_z
 
-def logging_csv(finger_num, gesture_id, number, csv_path, point_history_list_x, point_history_list_y, point_history_list_z):
+def logging_csv(finger_num, csv_path, point_history_list_x, point_history_list_y, point_history_list_z):
     with open(csv_path, 'a', newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([gesture_id, number, finger_num, *point_history_list_x, *point_history_list_y, *point_history_list_z])
+        writer.writerow([gesture_id, *point_history_list_x, *point_history_list_y, *point_history_list_z])
     return
 
 # 座標履歴を描画する関数
@@ -70,7 +70,7 @@ def pre_process_point_history(image, point_history):
 
     return temp_point_history
 
-def pre_datashaping():
+def similarityculc():
     # CSVファイル保存先
     csv_path = './point_history_add_label.csv'
 
@@ -111,10 +111,71 @@ def pre_datashaping():
 
     for i in range(2, 35, 16):
         v_x2 = np.append(v_x2, df_20_0.iat[0, i])
-    v = []
-    v.append(v_x1)
-    v.append(v_x2)
+    vx = []
+    vx.append(v_x1)
+    vx.append(v_x2)
 
+    csv_path2 = './point_history_detect.csv'
+    df = pd.read_csv(csv_path2, index_col=0)
+    df2 = df.query('fingernum == 13') - df.query('fingernum == 5')
+
+    v_y1 = np.array([])
+    for i in range(2, 35, 16):
+        v_y1 = np.append(v_y1, df2.iat[0, i])
+
+    df_fing_0 = df.query('fingernum == 0')
+    df_fing_4 = df.query('fingernum == 4')
+    df_fing_8 = df.query('fingernum == 8')
+    df_fing_12 = df.query('fingernum == 12')
+    df_fing_16 = df.query('fingernum == 16')
+    df_fing_20 = df.query('fingernum == 20')
+
+    df_4_0 = df_fing_4 - df_fing_0
+    df_8_0 = df_fing_8 - df_fing_0
+    df_12_0 = df_fing_12 - df_fing_0
+    df_16_0 = df_fing_16 - df_fing_0
+    df_20_0 = df_fing_20 - df_fing_0
+
+    v_y2 = np.array([])
+
+    for i in range(1, 35, 16):
+        v_y2 = np.append(v_y2, df_4_0.iat[0, i])
+
+    for i in range(1, 35, 16):
+        v_y2 = np.append(v_y2, df_8_0.iat[0, i])
+
+    for i in range(1, 35, 16):
+        v_y2 = np.append(v_y2, df_12_0.iat[0, i])
+
+    for i in range(1, 35, 16):
+        v_y2 = np.append(v_y2, df_16_0.iat[0, i])
+
+    for i in range(1, 35, 16):
+        v_y2 = np.append(v_y2, df_20_0.iat[0, i])
+
+    nx_1 = np.linalg.norm(v_x1, ord=2)
+    nx_2 = np.linalg.norm(v_x2, ord=2)
+
+    nvx = []
+    nvx.append(nx_1)
+    nvx.append(nx_2)
+
+    vy = []
+    vy.append(v_y1)
+    vy.append(v_y2)
+
+    ny_1 = np.linalg.norm(v_y1, ord=2)
+    ny_2 = np.linalg.norm(v_y2, ord=2)
+
+    nvy = []
+    nvy.append(ny_1)
+    nvy.append(ny_2)
+
+    # 類似度計算
+    w = 1
+    sim = np.sqrt(2) * ((w * np.dot(vx[0], vy[0]) / (nvx[0] * nvy[0])) + (w * np.dot(vx[1], vy[1]) / (nvx[1] * nvy[1])))
+
+    return sim
 # カメラキャプチャ設定
 camera_no = 0
 video_capture = cv2.VideoCapture(camera_no)
@@ -150,7 +211,7 @@ point_history_y = deque(maxlen=history_length)
 point_history_z = deque(maxlen=history_length)
 point_history_num = [0]*21
 
-csv_path = './point_history_detect.csv'
+
 
 gesture_label = ['a', 'i', 'u', 'e', 'o']
 
@@ -192,7 +253,7 @@ while video_capture.isOpened():
                        point_history_list_x = list(point_history_x)
                        point_history_list_y = list(point_history_y)
                        point_history_list_z = list(point_history_z)
-                       logging_csv(i,  csv_path,
+                       logging_csv(i, './point_history_detect.csv',
                                    point_history_list_x, point_history_list_y, point_history_list_z)
                        point_history_num[i] = 0
 
@@ -200,21 +261,15 @@ while video_capture.isOpened():
         if len(point_history) > 0:
             point_history.popleft()
 
-    gesture_id = 0
+    gesture_id = 1
+    sim = 0
     if len(point_history) == history_length:
-        temp_point_history = pre_process_point_history(rgb_image,
-                                                       point_history)
-
-        interpreter.set_tensor(
-            input_details[0]['index'],
-            np.array([temp_point_history]).astype(np.float32))
-        interpreter.invoke()
-        tflite_results = interpreter.get_tensor(output_details[0]['index'])
-
-        gesture_id = np.argmax(np.squeeze(tflite_results))
+        sim = similarityculc()
+        if sim >0.1:
+            gesture_id = 0
 
     # ディスプレイ表示
-    cv2.putText(frame, gesture_label[gesture_id], (10, 30),
+    cv2.putText(frame,str(sim), (10, 30),
                 cv2.FONT_HERSHEY_PLAIN, 1.2, (255, 0, 0), 1, cv2.LINE_AA)
     frame = draw_point_history(frame, point_history)
     cv2.imshow('chapter06', frame)
@@ -222,7 +277,7 @@ while video_capture.isOpened():
     # キー入力(ESC:プログラム終了)
     key = cv2.waitKey(1)
     if key == 27:  # ESC
-        os.remove(csv_path)
+        os.remove('./point_history_detect.csv')
         break
 
 # リソースの解放
