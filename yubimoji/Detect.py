@@ -31,11 +31,20 @@ def calc_landmark_list(image, landmarks):
 
     return landmark_point_x, landmark_point_y, landmark_point_z
 
-def logging_csv(finger_num, csv_path, point_history_list_x, point_history_list_y, point_history_list_z):
-    with open(csv_path, 'a', newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow([gesture_id, *point_history_list_x, *point_history_list_y, *point_history_list_z])
-    return
+def logging_csv(finger_num, point_history_list_x, point_history_list_y, point_history_list_z):
+
+       df_num = pd.DataFrame(finger_num, columns = ['fingernum'])
+       df_x = pd.DataFrame([point_history_list_x],
+                           columns = ['x1','x2','x3','x4','x5','x6','x7','x8','x9','x10','x11','x12','x13',
+                                      'x14','x15','x16'])
+       df_y = pd.DataFrame([point_history_list_y],
+                           columns = ['y1','y2','y3','y4','y5','y6','y7','y8','y9','y10','y11','y12','y13',
+                                      'y14','y15','y16'])
+       df_z = pd.DataFrame([point_history_list_z],
+                           columns = ['z1','z2','z3','z4','z5','z6','z7','z8','z9','z10','z11','z12','z13',
+                                      'z14','z15','z16'])
+       df = pd.concat([df_num, df_x, df_y, df_z], axis='columns')
+       return df
 
 # 座標履歴を描画する関数
 def draw_point_history(image, point_history):
@@ -70,7 +79,7 @@ def pre_process_point_history(image, point_history):
 
     return temp_point_history
 
-def similarityculc():
+def similarityculc(df_Log):
     # CSVファイル保存先
     csv_path = './point_history_add_label.csv'
 
@@ -115,20 +124,21 @@ def similarityculc():
     vx.append(v_x1)
     vx.append(v_x2)
 
-    csv_path2 = './point_history_detect.csv'
-    df = pd.read_csv(csv_path2, index_col=0)
-    df2 = df.query('fingernum == 13') - df.query('fingernum == 5')
+
+    df3 = df_Log.query('fingernum == 13') - df_Log.query('fingernum == 5')
+
+    num_index = len(df3.index)
 
     v_y1 = np.array([])
     for i in range(2, 35, 16):
-        v_y1 = np.append(v_y1, df2.iat[0, i])
+        v_y1 = np.append(v_y1, df3.iat[num_index-1, i])
 
-    df_fing_0 = df.query('fingernum == 0')
-    df_fing_4 = df.query('fingernum == 4')
-    df_fing_8 = df.query('fingernum == 8')
-    df_fing_12 = df.query('fingernum == 12')
-    df_fing_16 = df.query('fingernum == 16')
-    df_fing_20 = df.query('fingernum == 20')
+    df_fing_0 = df_Log.query('fingernum == 0')
+    df_fing_4 = df_Log.query('fingernum == 4')
+    df_fing_8 = df_Log.query('fingernum == 8')
+    df_fing_12 = df_Log.query('fingernum == 12')
+    df_fing_16 = df_Log.query('fingernum == 16')
+    df_fing_20 = df_Log.query('fingernum == 20')
 
     df_4_0 = df_fing_4 - df_fing_0
     df_8_0 = df_fing_8 - df_fing_0
@@ -138,20 +148,22 @@ def similarityculc():
 
     v_y2 = np.array([])
 
-    for i in range(1, 35, 16):
-        v_y2 = np.append(v_y2, df_4_0.iat[0, i])
+
 
     for i in range(1, 35, 16):
-        v_y2 = np.append(v_y2, df_8_0.iat[0, i])
+        v_y2 = np.append(v_y2, df_4_0.iat[num_index-1, i])
 
     for i in range(1, 35, 16):
-        v_y2 = np.append(v_y2, df_12_0.iat[0, i])
+        v_y2 = np.append(v_y2, df_8_0.iat[num_index-1, i])
 
     for i in range(1, 35, 16):
-        v_y2 = np.append(v_y2, df_16_0.iat[0, i])
+        v_y2 = np.append(v_y2, df_12_0.iat[num_index-1, i])
 
     for i in range(1, 35, 16):
-        v_y2 = np.append(v_y2, df_20_0.iat[0, i])
+        v_y2 = np.append(v_y2, df_16_0.iat[num_index-1, i])
+
+    for i in range(1, 35, 16):
+        v_y2 = np.append(v_y2, df_20_0.iat[num_index-1, i])
 
     nx_1 = np.linalg.norm(v_x1, ord=2)
     nx_2 = np.linalg.norm(v_x2, ord=2)
@@ -211,7 +223,11 @@ point_history_y = deque(maxlen=history_length)
 point_history_z = deque(maxlen=history_length)
 point_history_num = [0]*21
 
+cols = ['fingernum','x1','x2','x3','x4','x5','x6','x7','x8','x9','x10','x11','x12','x13','x14','x15','x16',
+        'y1','y2','y3','y4','y5','y6','y7','y8','y9','y10','y11','y12','y13','y14','y15','y16',
+        'z1','z2','z3','z4','z5','z6','z7','z8','z9','z10','z11','z12','z13','z14','z15','z16']
 
+df_Log = pd.DataFrame(index=[], columns=cols)
 
 gesture_label = ['a', 'i', 'u', 'e', 'o']
 
@@ -253,23 +269,27 @@ while video_capture.isOpened():
                        point_history_list_x = list(point_history_x)
                        point_history_list_y = list(point_history_y)
                        point_history_list_z = list(point_history_z)
-                       logging_csv(i, './point_history_detect.csv',
-                                   point_history_list_x, point_history_list_y, point_history_list_z)
+                       num = [i]
+                       df_log = logging_csv(num, point_history_list_x, point_history_list_y, point_history_list_z)
                        point_history_num[i] = 0
-
+                       df_Log = pd.concat([df_Log,df_log])
     else:
-        if len(point_history) > 0:
-            point_history.popleft()
+        if len(point_history_x) > 0 & len(point_history_y) > 0 & len(point_history_z) > 0:
+            point_history_x.popleft()
+            point_history_y.popleft()
+            point_history_z.popleft()
+
 
     gesture_id = 1
     sim = 0
-    if len(point_history) == history_length:
-        sim = similarityculc()
-        if sim >0.1:
+    if len(point_history_x) == history_length & len(point_history_y) == history_length & len(point_history_z) == history_length:
+        if df_Log.empty == False:
+            sim = similarityculc(df_Log)
+        if sim >2:
             gesture_id = 0
 
     # ディスプレイ表示
-    cv2.putText(frame,str(sim), (10, 30),
+    cv2.putText(frame, str(sim), (10, 30),
                 cv2.FONT_HERSHEY_PLAIN, 1.2, (255, 0, 0), 1, cv2.LINE_AA)
     frame = draw_point_history(frame, point_history)
     cv2.imshow('chapter06', frame)
